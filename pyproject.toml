@@ -83,7 +83,10 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Tests use assert, contain intentionally fake secrets, and need no docstrings.
 "tests/**" = ["S101", "S105", "S106", "D"]
-"alembic/**" = ["D"]
+# Alembic env/templates: no docstring requirements.
+"alembic/env.py" = ["D"]
+# Generated migration files are machine-produced; relax style rules.
+"alembic/versions/**" = ["D", "E501", "W291", "W293", "UP006", "UP007", "UP035", "I001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

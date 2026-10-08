@@ -55,7 +55,7 @@ Full details live in [`docs/`](docs/).
 This project is delivered **one phase at a time**. Each phase is implemented, tested,
 reviewed, and committed before the next begins. See [`docs/03-development-order.md`](docs/03-development-order.md).
 
-**Current status:** Phase 1 (Repository/environment/foundation) complete.
+**Current status:** Phase 3 (PostgreSQL/Alembic) complete.
 
 ---
 

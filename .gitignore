@@ -32,9 +32,9 @@ data/uploads/**
 data/storage/**
 !data/storage/**/.gitkeep
 
-# Model caches
+# Model caches (root-level only; must not match ipsakti/db/models/)
 .cache/
-models/
+/models/
 
 # Databases / local persistence
 *.db
