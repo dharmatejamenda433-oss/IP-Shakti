@@ -81,7 +81,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "D"]  # assert in tests; no docstring requirements
+# Tests use assert, contain intentionally fake secrets, and need no docstrings.
+"tests/**" = ["S101", "S105", "S106", "D"]
 "alembic/**" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
