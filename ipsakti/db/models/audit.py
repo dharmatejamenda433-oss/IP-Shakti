@@ -11,7 +11,6 @@ from datetime import datetime
 
 from sqlalchemy import JSON, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.types import Uuid
 
 from ipsakti.db.base import Base, UUIDPrimaryKeyMixin
 from ipsakti.db.enums import AuditAction, AuditResult, sa_enum
