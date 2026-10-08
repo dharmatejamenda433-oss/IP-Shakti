@@ -55,15 +55,51 @@ Full details live in [`docs/`](docs/).
 This project is delivered **one phase at a time**. Each phase is implemented, tested,
 reviewed, and committed before the next begins. See [`docs/03-development-order.md`](docs/03-development-order.md).
 
-**Current status:** Phase 0 (Requirements & Architecture) complete. No application code yet.
+**Current status:** Phase 1 (Repository/environment/foundation) complete.
 
 ---
 
-## Repository layout (planned)
+## Getting started (development)
+
+Requires Python **3.12+** (3.13 verified). All commands run from the repository root.
+
+```bash
+# 1. Create and activate a virtual environment
+python -m venv .venv
+#    Windows (Git Bash):
+.venv/Scripts/python.exe -m pip install --upgrade pip
+#    Linux/macOS:
+# source .venv/bin/activate && pip install --upgrade pip
+
+# 2. Install the package with dev tooling
+#    (Windows Git Bash uses .venv/Scripts/python.exe; Linux/macOS uses .venv/bin/python)
+.venv/Scripts/python.exe -m pip install -e ".[dev]"
+
+# 3. Copy the environment template and fill in secrets
+cp .env.example .env
+
+# 4. Run the quality gates
+.venv/Scripts/python.exe -m ruff check .
+.venv/Scripts/python.exe -m mypy ipsakti tests
+.venv/Scripts/python.exe -m pytest
+```
+
+Optional dependency extras (installed on demand in later phases):
+
+- `.[retrieval]` — PyMuPDF, rank-bm25, qdrant-client, sentence-transformers (Phases 6–14)
+- `.[generation]` — Groq provider (Phase 16)
+
+---
+
+## Repository layout
 
 ```
 ipsakti/           # Application package (introduced in Phase 2)
 data/corpus/       # Source documents — never committed (see .gitignore)
+data/uploads/      # Transient upload landing zone — never committed
+data/storage/      # Persisted document files — never committed
 docs/              # Requirements, architecture, ADRs
 tests/             # Unit / integration / API / security / E2E tests
+pyproject.toml     # Dependencies, extras, ruff/mypy/pytest configuration
+.env.example       # Environment template (copy to .env; never commit .env)
 ```
