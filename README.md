@@ -55,7 +55,7 @@ Full details live in [`docs/`](docs/).
 This project is delivered **one phase at a time**. Each phase is implemented, tested,
 reviewed, and committed before the next begins. See [`docs/03-development-order.md`](docs/03-development-order.md).
 
-**Current status:** Phase 3 (PostgreSQL/Alembic) complete.
+**Current status:** Phase 4 (Authentication / RBAC / tenant isolation) complete.
 
 ---
 
@@ -88,6 +88,23 @@ Optional dependency extras (installed on demand in later phases):
 
 - `.[retrieval]` — PyMuPDF, rank-bm25, qdrant-client, sentence-transformers (Phases 6–14)
 - `.[generation]` — Groq provider (Phase 16)
+
+### Running the API (Phase 4)
+
+```bash
+# Apply migrations (requires IPSAKTI_DATABASE_URL in .env), then start the server:
+.venv/Scripts/python.exe -m alembic upgrade head
+.venv/Scripts/python.exe -m uvicorn ipsakti.api.app:create_app --factory --reload
+```
+
+Endpoints implemented so far (under `/api/v1`): `POST /auth/login`, `POST /auth/refresh`,
+`POST /auth/logout`, `GET /users/me`, plus `GET /health`. Interactive docs at `/docs`.
+
+RBAC roles/permissions must be seeded once per database via `ipsakti.auth.bootstrap(session)`;
+the built-in role templates (ADMIN/MANAGER/USER) are global and shared across tenants.
+Provisioning tenants/users is an admin operation delivered in a later phase — tests create them
+directly. See [`docs/decisions/0007`](docs/decisions/0007-stateless-jwt-with-refresh-denylist.md)
+for the token/revocation design.
 
 ---
 

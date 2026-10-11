@@ -11,3 +11,4 @@ Format: **Context → Decision → Consequences**. Status is one of Accepted / S
 | [0004](0004-provider-isolated-generation.md) | Provider-isolated generation, evidence-only + abstention | Accepted |
 | [0005](0005-server-derived-tenant-identity.md) | Server-derived tenant identity + query-time isolation | Accepted |
 | [0006](0006-backend-citation-validation.md) | Conservative backend citation validation | Accepted |
+| [0007](0007-stateless-jwt-with-refresh-denylist.md) | Stateless JWT sessions with an in-process refresh-token denylist | Accepted |

@@ -8,26 +8,39 @@ production target remains PostgreSQL.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+from ipsakti.core.config import get_settings
 from sqlalchemy import create_engine, inspect
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
-def alembic_cfg(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Config:
-    """Build an Alembic Config pointed at a temporary SQLite database."""
+def alembic_cfg(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[Config]:
+    """Build an Alembic Config pointed at a temporary SQLite database.
+
+    ``get_settings`` is process-cached, so the cache is cleared after overriding
+    ``IPSAKTI_DATABASE_URL``; otherwise ``alembic/env.py`` would reuse a URL cached
+    by an earlier test and ignore this override.
+    """
     db_path = tmp_path / "migration_test.db"
     monkeypatch.setenv("IPSAKTI_DATABASE_URL", f"sqlite:///{db_path}")
+    get_settings.cache_clear()
     cfg = Config(str(REPO_ROOT / "alembic.ini"))
     cfg.set_main_option("script_location", str(REPO_ROOT / "alembic"))
     cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
-    return cfg
+    try:
+        yield cfg
+    finally:
+        get_settings.cache_clear()
 
 
 def test_single_head_revision(alembic_cfg: Config) -> None:
