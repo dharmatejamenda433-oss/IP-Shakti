@@ -145,7 +145,8 @@ def chunk_extracted_blocks(
         for unit in reversed(previous):
             if carry_count + unit.token_count > overlap_tokens:
                 break
-            if sum(item.token_count for item in grouped[index]) + carry_count + unit.token_count > target_tokens:
+            next_count = sum(item.token_count for item in grouped[index])
+            if next_count + carry_count + unit.token_count > target_tokens:
                 break
             carry.insert(0, unit)
             carry_count += unit.token_count
