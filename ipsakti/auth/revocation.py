@@ -4,12 +4,11 @@ Logout and refresh rotation revoke a refresh token's ``jti`` so it can no longer
 exchanged for new tokens. Access tokens are stateless and short-lived; they are not
 denylisted and simply expire.
 
-Scope note (see ADR 0007): this is a single-process, in-memory store. It is the
-simplest implementation that satisfies the spec's "logout/revocation" requirement
-without introducing Redis or a new table. It does not survive a restart and is not
-shared across processes. When the deployment scales beyond one API process, swap
-this for a persisted ``revoked_tokens`` table or a per-user ``token_version``
-without changing the call sites (they depend only on revoke/is_revoked).
+Scope note (see ADR 0007): this is a single-process, in-memory store. It does not
+survive a restart and is not shared across processes. When the deployment scales
+beyond one API process, replace it with a persisted ``revoked_tokens`` table or a
+per-user ``token_version``. The ``consume_once`` operation makes refresh rotation
+atomic only within this process.
 """
 
 from __future__ import annotations
@@ -37,6 +36,20 @@ class TokenDenylist:
             self._prune(now)
             if expires_at_epoch > now:
                 self._expiries[jti] = expires_at_epoch
+
+    def consume_once(self, jti: str, *, expires_at_epoch: float) -> bool:
+        """Atomically mark a token used, returning False if it was already used.
+
+        This closes the check-then-revoke race for concurrent refresh requests
+        handled by this process. It does not coordinate across multiple workers.
+        """
+        now = time.time()
+        with self._lock:
+            self._prune(now)
+            if jti in self._expiries or expires_at_epoch <= now:
+                return False
+            self._expiries[jti] = expires_at_epoch
+            return True
 
     def is_revoked(self, jti: str) -> bool:
         """Return True when ``jti`` is currently revoked."""
