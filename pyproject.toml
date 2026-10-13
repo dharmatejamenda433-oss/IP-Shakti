@@ -105,7 +105,7 @@ plugins = ["pydantic.mypy"]
 exclude = ["alembic/versions/"]
 
 [[tool.mypy.overrides]]
-module = ["rank_bm25.*", "passlib.*", "fitz.*", "groq.*"]
+module = ["rank_bm25.*", "passlib.*", "fitz.*", "pymupdf.*", "groq.*"]
 ignore_missing_imports = true
 
 [tool.pydantic-mypy]

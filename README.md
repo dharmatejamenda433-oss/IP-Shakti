@@ -55,7 +55,7 @@ Full details live in [`docs/`](docs/).
 This project is delivered **one phase at a time**. Each phase is implemented, tested,
 reviewed, and committed before the next begins. See [`docs/03-development-order.md`](docs/03-development-order.md).
 
-**Current status:** Phase 5 (Document upload) complete.
+**Current status:** Phase 6 (PDF extraction) complete.
 
 ---
 
@@ -88,6 +88,23 @@ Optional dependency extras (installed on demand in later phases):
 
 - `.[retrieval]` — PyMuPDF, rank-bm25, qdrant-client, sentence-transformers (Phases 6–14)
 - `.[generation]` — Groq provider (Phase 16)
+
+> **Phase 6 note:** PDF extraction only needs **PyMuPDF**. To avoid pulling the heavy
+> ML stack (sentence-transformers/torch, needed from Phase 8) you can install it alone:
+> `.venv/Scripts/python.exe -m pip install "pymupdf>=1.24,<2.0"`. PyMuPDF is imported
+> lazily, so the rest of the app and the pure extraction helpers work without it.
+
+### PDF extraction (Phase 6)
+
+`ipsakti.ingestion.extract_pdf(path, *, password=None, max_pages=None)` returns a page-aware
+`ExtractionResult`: per-page text (1-based page numbers, every page recorded — blanks included),
+structural blocks (`HEADING` / `PARAGRAPH` / `TABLE`) with resolved `section` / `subsection`
+context, and total character count. It is a library used by the ingestion worker (Phase 10); no
+HTTP endpoint is added yet.
+
+Failures are explicit, never silent (each raises `ExtractionError` with a distinct `code`):
+`corrupt_document`, `password_required`, `ocr_required` (scanned/image-only), `empty_document`,
+and `too_large` (over `max_pages`). This wires into the state machine's `FAILED` path later.
 
 ### Running the API
 
