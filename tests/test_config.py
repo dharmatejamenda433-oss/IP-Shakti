@@ -52,8 +52,27 @@ def test_relevance_threshold_bounds() -> None:
 
 
 def test_is_production_flag() -> None:
-    assert _settings(env="production").is_production is True
+    assert _settings(env="production", secret_key="a" * 48).is_production is True
     assert _settings(env="development").is_production is False
+
+
+@pytest.mark.parametrize(
+    "secret",
+    [
+        "insecure-dev-only-key",
+        "change-me-in-production-use-a-long-random-value",
+        "short",
+    ],
+)
+def test_production_rejects_weak_or_placeholder_secret(secret: str) -> None:
+    with pytest.raises(PydanticValidationError, match="production requires"):
+        _settings(env="production", secret_key=secret)
+
+
+def test_production_accepts_strong_non_placeholder_secret() -> None:
+    secret = "x7kQ2pV9mR4nT8wB6zL3cF1hJ5sD0aGq"
+    settings = _settings(env="production", secret_key=secret)
+    assert settings.secret_key.get_secret_value() == secret
 
 
 def test_env_prefix_reads_environment(monkeypatch: pytest.MonkeyPatch) -> None:

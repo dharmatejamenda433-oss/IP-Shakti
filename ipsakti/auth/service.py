@@ -113,17 +113,19 @@ def refresh_token_pair(session: Session, refresh_token: str) -> TokenResponse:
             its user is no longer eligible.
     """
     claims = decode_token(refresh_token, expected_type=TokenType.REFRESH)
-    if denylist.is_revoked(claims.jti):
-        raise AuthenticationError("token has been revoked")
-
     user = session.get(User, claims.subject)
     if user is None or user.status != UserStatus.ACTIVE:
         raise AuthenticationError("invalid credentials")
     if user.tenant is not None and user.tenant.status != TenantStatus.ACTIVE:
         raise AuthenticationError("invalid credentials")
 
-    # Rotation: the presented refresh token is single-use.
-    denylist.revoke(claims.jti, expires_at_epoch=claims.expires_at.timestamp())
+    # Atomically consume the old token after eligibility checks. A concurrent
+    # refresh request in this process can no longer exchange the same token.
+    if not denylist.consume_once(
+        claims.jti,
+        expires_at_epoch=claims.expires_at.timestamp(),
+    ):
+        raise AuthenticationError("token has been revoked")
     return _token_pair(user)
 
 

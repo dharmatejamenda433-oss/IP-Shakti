@@ -30,6 +30,22 @@ def _clean_denylist() -> Iterator[None]:
     denylist.clear()
 
 
+
+
+def test_denylist_consume_once_is_single_use() -> None:
+    import time
+
+    expires_at = time.time() + 60
+    assert denylist.consume_once("single-use-jti", expires_at_epoch=expires_at) is True
+    assert denylist.consume_once("single-use-jti", expires_at_epoch=expires_at) is False
+
+
+def test_denylist_consume_once_rejects_expired_token() -> None:
+    import time
+
+    assert denylist.consume_once("expired-jti", expires_at_epoch=time.time() - 1) is False
+
+
 def _user(
     session: Session,
     email: str,
