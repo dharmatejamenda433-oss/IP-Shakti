@@ -10,7 +10,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "staging", "production", "test"]
@@ -94,6 +94,21 @@ class Settings(BaseSettings):
             msg = "chunk_overlap_tokens must be smaller than chunk_target_tokens"
             raise ValueError(msg)
         return value
+
+    @model_validator(mode="after")
+    def _require_strong_production_secret(self) -> Settings:
+        """Reject development and placeholder signing keys in production."""
+        if self.env == "production":
+            secret = self.secret_key.get_secret_value().strip()
+            lowered = secret.lower()
+            placeholders = ("insecure-dev-only-key", "change-me", "replace-me", "your-secret")
+            if len(secret) < 32 or any(marker in lowered for marker in placeholders):
+                msg = (
+                    "production requires IPSAKTI_SECRET_KEY to be a non-placeholder "
+                    "random secret of at least 32 characters"
+                )
+                raise ValueError(msg)
+        return self
 
     @property
     def is_production(self) -> bool:
