@@ -52,7 +52,9 @@ def estimate_token_count(text: str) -> int:
     return len(_TOKEN_RE.findall(text))
 
 
-def _split_block(block: ExtractedBlock, *, target_tokens: int) -> list[_Unit]:
+def _split_block(
+    block: ExtractedBlock, *, target_tokens: int, overlap_tokens: int
+) -> list[_Unit]:
     """Split a block into sentence units, hard-splitting exceptionally long spans."""
     text = block.text.strip()
     if not text:
@@ -79,7 +81,8 @@ def _split_block(block: ExtractedBlock, *, target_tokens: int) -> list[_Unit]:
 
         # Split long sentences by token spans while preserving original punctuation
         # and whitespace inside each slice.
-        for start in range(0, len(tokens), target_tokens):
+        step = max(1, target_tokens - overlap_tokens)
+        for start in range(0, len(tokens), step):
             token_slice = tokens[start : start + target_tokens]
             piece = sentence[token_slice[0].start() : token_slice[-1].end()].strip()
             if piece:
@@ -118,7 +121,9 @@ def chunk_extracted_blocks(
     units = [
         unit
         for block in blocks
-        for unit in _split_block(block, target_tokens=target_tokens)
+        for unit in _split_block(
+            block, target_tokens=target_tokens, overlap_tokens=overlap_tokens
+        )
     ]
     if not units:
         return ()
