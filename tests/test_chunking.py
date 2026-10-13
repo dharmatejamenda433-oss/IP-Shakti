@@ -78,6 +78,8 @@ def test_large_input_splits_without_losing_words() -> None:
     for word in words:
         assert word in combined
     assert all(chunk.token_count <= 10 for chunk in chunks)
+    assert "word8" in chunks[0].text
+    assert "word8" in chunks[1].text
 
 
 @pytest.mark.parametrize(
