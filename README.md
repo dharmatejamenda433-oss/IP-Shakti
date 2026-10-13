@@ -94,51 +94,6 @@ Optional dependency extras (installed on demand in later phases):
 > `.venv/Scripts/python.exe -m pip install "pymupdf>=1.24,<2.0"`. PyMuPDF is imported
 > lazily, so the rest of the app and the pure extraction helpers work without it.
 
-### PDF extraction (Phase 6)
-
-`ipsakti.ingestion.extract_pdf(path, *, password=None, max_pages=None)` returns a page-aware
-`ExtractionResult`: per-page text (1-based page numbers, every page recorded — blanks included),
-structural blocks (`HEADING` / `PARAGRAPH` / `TABLE`) with resolved `section` / `subsection`
-context, and total character count. It is a library used by the ingestion worker (Phase 10); no
-HTTP endpoint is added yet.
-
-Failures are explicit, never silent (each raises `ExtractionError` with a distinct `code`):
-`corrupt_document`, `password_required`, `ocr_required` (scanned/image-only), `empty_document`,
-and `too_large` (over `max_pages`). This wires into the state machine's `FAILED` path later.
-
-### Running the API
-
-```bash
-# Apply migrations (requires IPSAKTI_DATABASE_URL in .env), then start the server:
-.venv/Scripts/python.exe -m alembic upgrade head
-.venv/Scripts/python.exe -m uvicorn ipsakti.api.app:create_app --factory --reload
-```
-
-Endpoints implemented so far (under `/api/v1`): `POST /auth/login`, `POST /auth/refresh`,
-`POST /auth/logout`, `GET /users/me`, `POST /documents` (multipart PDF upload),
-`GET /documents/{id}`, plus `GET /health`. Interactive docs at `/docs`.
-
-`POST /documents` requires the `document:upload` permission (ADMIN/MANAGER) and validates the
-upload before storing it: MIME type, `.pdf` extension, `%PDF-` magic bytes, and size
-(`IPSAKTI_MAX_UPLOAD_BYTES`). Files are stored under `data/storage` at a server-generated UUID
-path via an atomic write, hashed with SHA-256, and rejected as a 409 if identical content already
-exists in the tenant. Each upload creates a `Document`, a current `DocumentVersion`, and an
-`IngestionJob` in the `UPLOADED` state — extraction/indexing is handled by the worker (Phase 10).
-
-```bash
-curl -X POST http://localhost:8000/api/v1/documents \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -F "file=@/path/to/doc.pdf;type=application/pdf" \
-  -F "title=My Document" -F "document_type=ACT" -F "domain=AYURVEDA"
-```
-
-RBAC roles/permissions must be seeded once per database via `ipsakti.auth.bootstrap(session)`;
-the built-in role templates (ADMIN/MANAGER/USER) are global and shared across tenants.
-Provisioning tenants/users is an admin operation delivered in a later phase — tests create them
-directly. See [`docs/decisions/0007`](docs/decisions/0007-stateless-jwt-with-refresh-denylist.md)
-for the token/revocation design and
-[`docs/decisions/0008`](docs/decisions/0008-secure-atomic-document-storage.md) for storage.
-
 ---
 
 ## Repository layout
