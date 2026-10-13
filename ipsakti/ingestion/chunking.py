@@ -129,19 +129,27 @@ def chunk_extracted_blocks(
     for unit in units:
         if current and current_count + unit.token_count > target_tokens:
             grouped.append(current)
-            carry: list[_Unit] = []
-            carry_count = 0
-            for previous in reversed(current):
-                if carry_count + previous.token_count > overlap_tokens:
-                    break
-                carry.insert(0, previous)
-                carry_count += previous.token_count
-            current = carry
-            current_count = carry_count
+            current = []
+            current_count = 0
         current.append(unit)
         current_count += unit.token_count
     if current:
         grouped.append(current)
+
+    # Add overlap after the initial greedy split. This avoids emitting overlap-only
+    # chunks or getting stuck when a carried unit plus the next unit exceeds target.
+    for index in range(1, len(grouped)):
+        previous = grouped[index - 1]
+        carry: list[_Unit] = []
+        carry_count = 0
+        for unit in reversed(previous):
+            if carry_count + unit.token_count > overlap_tokens:
+                break
+            if sum(item.token_count for item in grouped[index]) + carry_count + unit.token_count > target_tokens:
+                break
+            carry.insert(0, unit)
+            carry_count += unit.token_count
+        grouped[index] = carry + grouped[index]
 
     namespace = uuid.uuid5(uuid.NAMESPACE_URL, f"ipsakti:{document_version_id}")
     chunks: list[TextChunk] = []
