@@ -55,7 +55,7 @@ Full details live in [`docs/`](docs/).
 This project is delivered **one phase at a time**. Each phase is implemented, tested,
 reviewed, and committed before the next begins. See [`docs/03-development-order.md`](docs/03-development-order.md).
 
-**Current status:** Phase 4 (Authentication / RBAC / tenant isolation) complete.
+**Current status:** Phase 5 (Document upload) complete.
 
 ---
 
@@ -89,7 +89,7 @@ Optional dependency extras (installed on demand in later phases):
 - `.[retrieval]` — PyMuPDF, rank-bm25, qdrant-client, sentence-transformers (Phases 6–14)
 - `.[generation]` — Groq provider (Phase 16)
 
-### Running the API (Phase 4)
+### Running the API
 
 ```bash
 # Apply migrations (requires IPSAKTI_DATABASE_URL in .env), then start the server:
@@ -98,13 +98,29 @@ Optional dependency extras (installed on demand in later phases):
 ```
 
 Endpoints implemented so far (under `/api/v1`): `POST /auth/login`, `POST /auth/refresh`,
-`POST /auth/logout`, `GET /users/me`, plus `GET /health`. Interactive docs at `/docs`.
+`POST /auth/logout`, `GET /users/me`, `POST /documents` (multipart PDF upload),
+`GET /documents/{id}`, plus `GET /health`. Interactive docs at `/docs`.
+
+`POST /documents` requires the `document:upload` permission (ADMIN/MANAGER) and validates the
+upload before storing it: MIME type, `.pdf` extension, `%PDF-` magic bytes, and size
+(`IPSAKTI_MAX_UPLOAD_BYTES`). Files are stored under `data/storage` at a server-generated UUID
+path via an atomic write, hashed with SHA-256, and rejected as a 409 if identical content already
+exists in the tenant. Each upload creates a `Document`, a current `DocumentVersion`, and an
+`IngestionJob` in the `UPLOADED` state — extraction/indexing is handled by the worker (Phase 10).
+
+```bash
+curl -X POST http://localhost:8000/api/v1/documents \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -F "file=@/path/to/doc.pdf;type=application/pdf" \
+  -F "title=My Document" -F "document_type=ACT" -F "domain=AYURVEDA"
+```
 
 RBAC roles/permissions must be seeded once per database via `ipsakti.auth.bootstrap(session)`;
 the built-in role templates (ADMIN/MANAGER/USER) are global and shared across tenants.
 Provisioning tenants/users is an admin operation delivered in a later phase — tests create them
 directly. See [`docs/decisions/0007`](docs/decisions/0007-stateless-jwt-with-refresh-denylist.md)
-for the token/revocation design.
+for the token/revocation design and
+[`docs/decisions/0008`](docs/decisions/0008-secure-atomic-document-storage.md) for storage.
 
 ---
 

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from ipsakti.api.errors import register_error_handlers
 from ipsakti.api.middleware import RequestContextMiddleware
 from ipsakti.api.routers import auth as auth_router
+from ipsakti.api.routers import documents as documents_router
 from ipsakti.api.routers import users as users_router
 from ipsakti.core.config import get_settings
 from ipsakti.core.logging import configure_logging
@@ -45,6 +46,7 @@ def create_app(session_factory: sessionmaker[Session] | None = None) -> FastAPI:
 
     app.include_router(auth_router.router, prefix=settings.api_v1_prefix)
     app.include_router(users_router.router, prefix=settings.api_v1_prefix)
+    app.include_router(documents_router.router, prefix=settings.api_v1_prefix)
 
     @app.get("/health", tags=["health"])
     def health() -> dict[str, Any]:
